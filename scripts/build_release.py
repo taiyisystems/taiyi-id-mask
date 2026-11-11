@@ -43,7 +43,7 @@ GUIDE = '''個資馬賽克 {version}（taiyi-id-mask）
 
 線上試用：https://taiyisystems.github.io/taiyi-id-mask/
 專案網頁：https://github.com/taiyisystems/taiyi-id-mask
-開源專案創建與維護：台醫資訊　授權：Apache-2.0
+開源專案創建與維護：台醫資訊（https://taiyisystems.com）　授權：Apache-2.0
 '''
 
 

@@ -59,7 +59,7 @@
 給 Python 程式使用（Python 3.8 以上）：
 
 ```bash
-pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.0.zip
+pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.1.zip
 ```
 
 ```python
@@ -150,9 +150,13 @@ python scripts/make_screenshots.py
 
 線上試用版由 `.github/workflows/pages.yml` 發布到 GitHub Pages。推上 `v1.0.0` 這類 tag 時，`.github/workflows/release.yml` 會測試、確認版本號一致，再建立 GitHub Release 並附上 `scripts/build_release.py` 產生的下載整包。
 
+## 維護
+
+開源專案創建與維護：[台醫資訊](https://taiyisystems.com)（TaiYi Systems）。
+
 ## English
 
-[Download the web app (zip, no installation)](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip) — unzip and double-click `個資馬賽克.html`. Or try it online: <https://taiyisystems.github.io/taiyi-id-mask/> (runs entirely in your browser; the page forbids all network connections). Python: `pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.0.zip`.
+[Download the web app (zip, no installation)](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip) — unzip and double-click `個資馬賽克.html`. Or try it online: <https://taiyisystems.github.io/taiyi-id-mask/> (runs entirely in your browser; the page forbids all network connections). Python: `pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.1.zip`.
 
 **taiyi-id-mask** detects and masks personal data in Traditional Chinese (Taiwan) text before it leaves your machine. Examples include names, national ID / resident certificate numbers, phone numbers, e-mail addresses, dates, Taiwanese street addresses and long record numbers. It replaces each value with a stable token such as `[姓名1]` and can restore the values afterwards.
 
@@ -164,3 +168,5 @@ It works in three layers:
 The package is pure standard-library Python 3.8+, runs fully offline, and is licensed under Apache-2.0. Place names come from the Ministry of the Interior open dataset (Open Government Data License v1); see NOTICE.
 
 It reduces risk but does not guarantee anonymisation. Always pass known identifiers (`known=`) and send only the fields you need.
+
+Created and maintained by [TaiYi Systems](https://taiyisystems.com) (台醫資訊).
