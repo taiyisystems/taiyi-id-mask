@@ -35,8 +35,8 @@ header p { margin: 0; font-size: 15px; opacity: .95; flex: 1; min-width: 260px; 
 .tab { font: inherit; font-size: 17px; padding: 7px 20px; border: 1px solid var(--line); border-bottom: none; border-radius: 10px 10px 0 0; background: var(--tab); color: var(--ink); cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--card); font-weight: bold; }
 main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 4px; }
-.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 0 12px 12px 12px; padding: 12px 16px; }
-.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px 16px; }
+.panel { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 0 12px 12px 12px; padding: 12px 16px; }
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(110px, 1fr) auto; gap: 8px 16px; }
 .col { display: contents; }
 .col:first-child > * { grid-column: 1; }
 .col:last-child > * { grid-column: 2; }
@@ -81,6 +81,11 @@ button.link:disabled { color: var(--muted); cursor: not-allowed; }
 .note { font-size: 14px; color: var(--muted); margin: 0; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--toast); color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 17px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
 .toast.show { opacity: 1; }
+/* 複製或存檔後的「存對照表」提醒：出現在按鈕下方，暫時取代下面兩段說明 */
+.ask { background: var(--over); border: 2px solid var(--brand); border-radius: 12px; padding: 10px 14px; }
+.ask p { margin: 0 0 8px; font-size: 14.5px; }
+.ask .ask-title { font-size: 17px; font-weight: bold; color: var(--brand); margin-bottom: 4px; }
+.tools:has(.ask:not([hidden])) .note { display: none; }
 footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
 [hidden] { display: none !important; }
 .explain { display: flex; align-items: center; gap: 18px; background: var(--soft); border-radius: 12px; padding: 8px 16px; }
@@ -184,6 +189,14 @@ footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
       <div class="row">
         <button class="btn primary" id="copy" disabled>複製結果</button>
         <button class="btn" id="save" disabled>存成檔案</button>
+      </div>
+      <div class="ask" id="askmap" role="group" aria-labelledby="askmap-title" hidden>
+        <p class="ask-title" id="askmap-title">之後要把代號換回真名嗎？</p>
+        <p>網頁關掉後就不知道 [姓名1] 是誰了。之後要換回來，請現在<b>存對照表</b>（存在「下載」資料夾；裡面有真實個資，只能留在自己電腦）。今天在這頁就換的話可以不存。</p>
+        <div class="row">
+          <button class="btn primary" id="asksave">存對照表</button>
+          <button class="btn" id="askno">不用，之後不會換回</button>
+        </div>
       </div>
       <p class="note">黃色＝已遮的個資，<b>點一下可取消遮蔽</b>，再點恢復。沒有稱謂、也沒填在左邊的名字可能抓不到，送出前請再看一眼。</p>
       <p class="note">隔天以後才要把傳回來的代號換回真名？請先<button class="link" id="savemap" disabled>存對照表</button>（裡面有真實個資，只能留在自己電腦，不要寄出去）。</p>
@@ -349,6 +362,7 @@ footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
       $('status').className = 'status idle'; $('status').textContent = '還沒有資料。';
       $('chips').innerHTML = '';
       ['copy', 'save', 'savemap'].forEach(function (id) { $(id).disabled = true; });
+      $('askmap').hidden = true;
       $('save').textContent = '存成檔案';
       return;
     }
@@ -446,7 +460,23 @@ footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
       return line.split('\t').map(function (c) { return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',');
     }).join('\r\n');
   }
-  $('copy').onclick = function () { copy(state.masked); };
+  // 複製或存檔後提醒存對照表：網頁關掉後對照就沒了，之後拿回來的文字會換不回真名。
+  // 同一份對照表只問一次（存了或選「不用」都算）。
+  function mapKey() { return state.mapping && Object.keys(state.mapping).length ? JSON.stringify(state.mapping) : ''; }
+  function askSaveMap() {
+    var k = mapKey();
+    if (k && state.mapHandled !== k) $('askmap').hidden = false;
+  }
+  function saveMap() {
+    var base = state.source ? state.source.name.replace(/\.[^.]+$/, '') + '-' : '';
+    download('對照表-' + base + stamp() + '.json', JSON.stringify({ '說明': '個資馬賽克對照表：含真實個資，只能留在本機，不要寄出。', mapping: state.mapping }, null, 2), 'application/json');
+    state.mapHandled = mapKey();
+    $('askmap').hidden = true;
+    toast('對照表已存在「下載」資料夾。裡面有真實個資，不要寄出去');
+  }
+  $('asksave').onclick = saveMap;
+  $('askno').onclick = function () { state.mapHandled = mapKey(); $('askmap').hidden = true; };
+  $('copy').onclick = function () { copy(state.masked); askSaveMap(); };
   $('save').onclick = function () {
     var base = state.source ? state.source.name.replace(/\.[^.]+$/, '') : '資料';
     if (state.source && state.source.table) {
@@ -456,12 +486,9 @@ footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
       download(base + '-已遮蔽.txt', '﻿' + state.masked.replace(/\r?\n/g, '\r\n'), 'text/plain;charset=utf-8');
       toast('已存成文字檔，在「下載」資料夾');
     }
+    askSaveMap();
   };
-  $('savemap').onclick = function () {
-    var base = state.source ? state.source.name.replace(/\.[^.]+$/, '') + '-' : '';
-    download('對照表-' + base + stamp() + '.json', JSON.stringify({ '說明': '個資馬賽克對照表：含真實個資，只能留在本機，不要寄出。', mapping: state.mapping }, null, 2), 'application/json');
-    toast('對照表已存在「下載」資料夾。裡面有真實個資，不要寄出去');
-  };
+  $('savemap').onclick = saveMap;
 
   // ---- 讀檔 ----
   function readText(buf) {

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taiyi-id-mask"
-version = "1.0.0"
+version = "1.1.0"
 description = "繁體中文（台灣）文字的個資偵測與遮蔽：身分證號、電話、地址、姓名等，送出前先在本機去識別化"
 readme = "README.md"
 license = {text = "Apache-2.0"}

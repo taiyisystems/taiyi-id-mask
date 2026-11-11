@@ -1,6 +1,6 @@
 # taiyi-id-mask 個資馬賽克
 
-**[⬇ 下載個資馬賽克（zip 整包，免安裝）](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip)**　解壓後雙擊「個資馬賽克.html」就能用　｜　[線上試用](https://taiyisystems.github.io/taiyi-id-mask/)
+**[下載個資馬賽克（zip 整包，免安裝）](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip)**　解壓後雙擊「個資馬賽克.html」就能用　｜　[線上試用](https://taiyisystems.github.io/taiyi-id-mask/)
 
 繁體中文（台灣）文字的個資偵測與遮蔽。資料要交給外部服務、分析程式或語言模型之前，先在本機把姓名、身分證號、電話、地址等換成代號，回覆再換回原值。
 
@@ -27,7 +27,7 @@
 1. 點 **[下載個資馬賽克（zip 整包）](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip)**，在下載的檔案上按右鍵「解壓縮全部」。
 2. 打開解壓出來的「個資馬賽克」資料夾，雙擊「個資馬賽克.html」（Edge、Chrome 都可以）。資料夾裡還有使用說明和範例檔案。
 3. 把文字貼進去，或把 Word、Excel、文字檔拖進去，右邊就會出現遮好的結果，按「複製結果」。
-4. 別人處理好、傳回來的文字還有 `[姓名1]` 這種代號時，到「② 把代號換回真名」貼上或把檔案拖進去，就會換回真名。隔天以後才要換的，先在 ① 按「存對照表」，之後在 ② 開啟它。
+4. 別人處理好、傳回來的文字還有 `[姓名1]` 這種代號時，到「② 把代號換回真名」貼上或把檔案拖進去，就會換回真名。隔天以後才要換的，要先存對照表：按「複製結果」或「存成檔案」後，畫面會提醒並提供「存對照表」按鈕；之後在 ② 開啟它。
 
 全部在自己電腦處理，網頁設定禁止連網，資料不會傳出去。第一次用可以按「用範例試試看」，或把 [`examples/`](examples/) 裡的範例檔（Word、Excel、CSV、文字檔，全部是虛構資料）拖進去。
 
@@ -59,7 +59,7 @@
 給 Python 程式使用（Python 3.8 以上）：
 
 ```bash
-pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.0.0.zip
+pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.0.zip
 ```
 
 ```python
@@ -152,7 +152,7 @@ python scripts/make_screenshots.py
 
 ## English
 
-[Download the web app (zip, no installation)](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip) — unzip and double-click `個資馬賽克.html`. Or try it online: <https://taiyisystems.github.io/taiyi-id-mask/> (runs entirely in your browser; the page forbids all network connections). Python: `pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.0.0.zip`.
+[Download the web app (zip, no installation)](https://github.com/taiyisystems/taiyi-id-mask/releases/latest/download/taiyi-id-mask-web.zip) — unzip and double-click `個資馬賽克.html`. Or try it online: <https://taiyisystems.github.io/taiyi-id-mask/> (runs entirely in your browser; the page forbids all network connections). Python: `pip install https://github.com/taiyisystems/taiyi-id-mask/archive/refs/tags/v1.1.0.zip`.
 
 **taiyi-id-mask** detects and masks personal data in Traditional Chinese (Taiwan) text before it leaves your machine. Examples include names, national ID / resident certificate numbers, phone numbers, e-mail addresses, dates, Taiwanese street addresses and long record numbers. It replaces each value with a stable token such as `[姓名1]` and can restore the values afterwards.
 

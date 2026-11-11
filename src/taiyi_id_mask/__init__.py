@@ -2,6 +2,6 @@
 from .core import (Finding, MaskResult, PIIBlocked, age_band, guard, mask, minimize_record, scan,
                    unmask)
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __all__ = ['Finding', 'MaskResult', 'PIIBlocked', 'age_band', 'guard', 'mask', 'minimize_record', 'scan',
            'unmask', '__version__']
