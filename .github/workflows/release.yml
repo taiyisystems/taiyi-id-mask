@@ -1,0 +1,32 @@
+# 發布版本：推上 v1.0.0 這類 tag 時，測試通過後建立 GitHub Release，附上整包下載 taiyi-id-mask-web.zip。
+# README 的下載連結是 releases/latest/download/taiyi-id-mask-web.zip，永遠指向最新版。
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: tag 要和程式的版本號一致
+        run: |
+          v=$(PYTHONPATH=src python -c "import taiyi_id_mask; print(taiyi_id_mask.__version__)")
+          echo "程式版本 $v，tag $GITHUB_REF_NAME"
+          test "v$v" = "$GITHUB_REF_NAME"
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/build_release.py
+      - name: 建立 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/taiyi-id-mask-web.zip \
+            --title "個資馬賽克 $GITHUB_REF_NAME" --notes-file dist/release-notes.md

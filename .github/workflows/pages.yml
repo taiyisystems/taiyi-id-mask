@@ -1,0 +1,39 @@
+# 線上試用版：把 個資馬賽克.html 放到 GitHub Pages（網址是 https://<帳號>.github.io/taiyi-id-mask/）。
+# 網頁是同一個檔案，在使用者自己的瀏覽器裡處理，頁面設定禁止任何網路連線，資料不會傳到 GitHub。
+# 第一次要在 GitHub 的 Settings → Pages → Build and deployment → Source 選「GitHub Actions」。
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 組出網站
+        run: |
+          mkdir -p _site/examples
+          cp 個資馬賽克.html _site/index.html
+          cp 個資馬賽克.html _site/
+          cp examples/*.docx examples/*.xlsx examples/*.csv examples/*.txt _site/examples/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

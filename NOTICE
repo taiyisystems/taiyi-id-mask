@@ -1,0 +1,14 @@
+taiyi-id-mask
+Copyright 2026 TaiYi Systems Co., Ltd. (台醫資訊有限公司)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes data derived from the following open dataset:
+
+  資料來源：內政部國土測繪中心「鄉鎮市區界線(TWD97經緯度)」1140318 版
+  https://data.gov.tw/dataset/7441
+  此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，
+  使用者於遵守本條款各項規定之前提下，得利用之。
+  政府資料開放授權條款：https://data.gov.tw/license
+
+  Used in: src/taiyi_id_mask/data/tw_place_names.json (county and township names only)

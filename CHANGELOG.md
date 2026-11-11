@@ -1,0 +1,29 @@
+# 更新紀錄
+
+格式參考 Keep a Changelog，版本採語意化版本。
+
+## 1.0.0 - 2026-11-11
+
+第一個公開版本。
+
+### 網頁版（給不寫程式的人）
+- `個資馬賽克.html`：不用安裝，雙擊用瀏覽器打開就能用。可下載整包 `taiyi-id-mask-web.zip`（網頁、使用說明、範例檔），也可以線上試用（GitHub Pages）。
+- 貼上文字，或拖進 Word（.docx）、Excel（.xlsx）、文字檔（.txt、.csv，含 Big5 舊檔）。結果自動出現；點黃色代號可取消或恢復遮蔽；複製、存成文字檔或 Excel 可開的檔案。
+- 表格的「姓名」「電話」「地址」等欄整欄遮；「姓名：」後面的三字全名自動當已知值，後文只寫名字也遮。
+- 「② 把代號換回真名」：貼上或拖入傳回來的文字或檔案，代號換回真名（綠色標示），對照表找不到的代號標紅色虛線並列出；可存對照表（檔名帶資料名稱）、之後再開啟。上方有流程圖說明用途。
+- 一個畫面放得下、左右兩框切齊；預設淺色，右上角可切換深色；列印一律淺色。
+- 頁面設定禁止任何網路連線（Content-Security-Policy `connect-src 'none'`），放在線上試用網站也一樣只在瀏覽器裡處理。
+- 偵測規則 `app/engine.js` 和 Python 版逐例比對一致（`tests/test_app.py`，需要 Node.js）；成品由 `scripts/build_app.py` 產生。
+
+### Python 套件
+- `scan`、`mask`、`unmask`、`guard`：偵測項目包括已知值、身分證與居留證號、電話、電子郵件、日期、地址、長串數字、標籤個資、稱謂前的姓名。
+- 已知值優先於其他規則；「家屬：女兒陳美玲」標籤後的稱謂詞跳過；「家屬王先生」「病人陳小姐」前面的身分詞不算名字。
+- `unmask` 認得全形括號（［姓名1］、【姓名1】）與括號內的空白，對照表沒有的代號原樣保留。
+- `extra` 參數：加入自訂格式，例如醫院病歷號。
+- `minimize_record`、`age_band`：欄位白名單與年齡層。
+- 命令列 `taiyi-id-mask`：`--known`、`--strict`、`--json`。
+- 縣市與鄉鎮市區名稱表：取自內政部國土測繪中心 1140318 版；重建腳本 `scripts/build_place_names.py`。
+
+### 其他
+- 範例檔 `examples/`（全部虛構），由 `scripts/build_examples.py` 產生；README 截圖由 `scripts/make_screenshots.py` 產生；下載整包由 `scripts/build_release.py` 產生。
+- 測試 26 項（Ubuntu 與 Windows，Python 3.8 與 3.12）。

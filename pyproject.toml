@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taiyi-id-mask"
+version = "1.0.0"
+description = "繁體中文（台灣）文字的個資偵測與遮蔽：身分證號、電話、地址、姓名等，送出前先在本機去識別化"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [{name = "TaiYi Systems Co., Ltd.", email = "contact@taiyisystems.com"}]
+requires-python = ">=3.8"
+dependencies = []
+keywords = ["pii", "privacy", "de-identification", "taiwan", "traditional-chinese", "healthcare"]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: Chinese (Traditional)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Security",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/taiyisystems/taiyi-id-mask"
+Issues = "https://github.com/taiyisystems/taiyi-id-mask/issues"
+
+[project.scripts]
+taiyi-id-mask = "taiyi_id_mask.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+taiyi_id_mask = ["data/*.json"]

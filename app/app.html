@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 不准連任何網址：資料只在這台電腦處理 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>個資馬賽克</title>
+<style>
+:root {
+  --bg: #f4f6f9; --card: #fff; --ink: #1d2733; --muted: #5b6876; --line: #d5dbe3;
+  --brand: #1565c0; --brand-ink: #fff; --ok: #1b7f3b; --ok-bg: #e7f6ec; --warn: #b3261e; --warn-bg: #fdecea;
+  --mark: #fff1b8; --mark-line: #e0b400;
+  --field: #fff; --tab: #e6eaf0; --over: #eef5ff; --soft: #eef1f5; --result: #fcfcfd; --toast: #1d2733; --header: #1565c0;
+}
+/* 預設淺色；右上角按鈕切到深色（記在這台電腦的瀏覽器）。列印一律用淺色。 */
+@media screen {
+  :root[data-theme="dark"] {
+    --bg: #14181d; --card: #1d232a; --ink: #e6eaee; --muted: #a3adb8; --line: #38424d;
+    --brand: #7db4f0; --brand-ink: #fff; --ok: #6fd49a; --ok-bg: #16301f; --warn: #ff8a80; --warn-bg: #3a1e1c;
+    --mark: #5a4a10; --mark-line: #e0b400;
+    --field: #161b21; --tab: #262d35; --over: #1b2a3d; --soft: #262d35; --result: #161b21; --toast: #3a4552; --header: #0f3d73;
+  }
+}
+* { box-sizing: border-box; }
+/* 一個畫面放得下：整頁不捲動，文字框和結果框自己伸縮（框裡文字多時框內捲動）。螢幕太窄或太矮時改回一般捲動。 */
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; display: flex; flex-direction: column; }
+header { background: var(--header); color: var(--brand-ink); padding: 8px 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 18px; }
+header h1 { margin: 0; font-size: 24px; letter-spacing: 2px; white-space: nowrap; }
+header p { margin: 0; font-size: 15px; opacity: .95; flex: 1; min-width: 260px; }
+.theme-btn { font: inherit; font-size: 14px; padding: 3px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.7); background: transparent; color: var(--brand-ink); cursor: pointer; white-space: nowrap; }
+.theme-btn:hover { background: rgba(255,255,255,.15); }
+.tabs { display: flex; gap: 6px; padding: 8px 20px 0; }
+.tab { font: inherit; font-size: 17px; padding: 7px 20px; border: 1px solid var(--line); border-bottom: none; border-radius: 10px 10px 0 0; background: var(--tab); color: var(--ink); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--card); font-weight: bold; }
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 4px; }
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 0 12px 12px 12px; padding: 12px 16px; }
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px 16px; }
+.col { display: contents; }
+.col:first-child > * { grid-column: 1; }
+.col:last-child > * { grid-column: 2; }
+.col > :nth-child(1) { grid-row: 1; }
+.col > :nth-child(2) { grid-row: 2; }
+.col > :nth-child(3) { grid-row: 3; }
+.col > :nth-child(4) { grid-row: 4; }
+.tools { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.step { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 18px; font-weight: bold; }
+.num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: var(--card); font-size: 16px; flex: none; }
+.hint { color: var(--muted); font-size: 14.5px; margin: 0; align-self: center; }
+textarea, input[type=text] { width: 100%; font: inherit; color: var(--ink); border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--field); }
+textarea:focus, input[type=text]:focus { outline: none; border-color: var(--brand); }
+.drop { min-height: 0; display: flex; flex-direction: column; }
+textarea { flex: 1; min-height: 110px; resize: none; }
+.drop.over textarea { border-color: var(--brand); background: var(--over); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button.btn { font: inherit; font-size: 16px; padding: 7px 16px; border-radius: 10px; border: 2px solid var(--brand); background: var(--field); color: var(--brand); cursor: pointer; }
+button.btn.primary { background: var(--brand); color: var(--card); font-weight: bold; }
+button.btn:disabled { opacity: .45; cursor: not-allowed; }
+button.link { font: inherit; background: none; border: none; color: var(--brand); text-decoration: underline; cursor: pointer; padding: 0; }
+button.link:disabled { color: var(--muted); cursor: not-allowed; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field label { font-weight: bold; font-size: 15px; display: block; margin-bottom: 2px; }
+.field small { font-weight: normal; color: var(--muted); }
+.status { border-radius: 10px; padding: 7px 12px; font-weight: bold; font-size: 15px; }
+.status.ok { background: var(--ok-bg); color: var(--ok); }
+.status.warn { background: var(--warn-bg); color: var(--warn); }
+.status.idle { background: var(--soft); color: var(--muted); font-weight: normal; }
+.result { min-height: 110px; overflow: auto; border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; white-space: pre-wrap; word-break: break-word; background: var(--result); }
+.result:empty::before { content: attr(data-empty); color: var(--muted); }
+.result mark { background: var(--mark); border-bottom: 2px solid var(--mark-line); border-radius: 4px; padding: 0 2px; cursor: pointer; color: inherit; }
+.result mark.off { background: none; border-bottom: 2px dashed var(--warn); }
+.result mark.back { background: var(--ok-bg); border-bottom-color: var(--ok); cursor: default; }
+.result mark.miss { background: var(--warn-bg); border-bottom: 2px dashed var(--warn); cursor: default; }
+.guide { color: var(--muted); white-space: normal; }
+.guide ol { padding-left: 1.3em; margin: 4px 0; }
+.guide li { margin: 4px 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips:empty { display: none; }
+.chip { background: var(--soft); border-radius: 999px; padding: 1px 12px; font-size: 14px; }
+.note { font-size: 14px; color: var(--muted); margin: 0; }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--toast); color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 17px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
+.toast.show { opacity: 1; }
+footer { color: var(--muted); font-size: 13px; padding: 2px 20px 6px; }
+[hidden] { display: none !important; }
+.explain { display: flex; align-items: center; gap: 18px; background: var(--soft); border-radius: 12px; padding: 8px 16px; }
+.explain-title { margin: 0; flex: 0 0 210px; font-size: 17px; font-weight: bold; }
+.explain-title span { display: block; font-size: 15px; font-weight: normal; color: var(--muted); margin-top: 4px; }
+.explain svg { flex: 1; min-width: 0; width: 100%; max-height: 118px; }
+@media (max-width: 900px), (max-height: 540px) {
+  html, body { height: auto; }
+  body { display: block; }
+  .cols { display: flex; flex-direction: column; gap: 8px; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .col + .col { margin-top: 12px; }
+  .fields { grid-template-columns: 1fr; }
+  textarea, .result { min-height: 220px; }
+  .explain { flex-direction: column; align-items: stretch; }
+  .explain-title { flex: none; }
+  .explain svg { max-height: none; }
+}
+@media print { body { display: block; } }
+</style>
+<script data-part="theme">
+// 畫面配色：預設淺色，使用者按右上角按鈕可切換深色；選擇記在這台電腦的瀏覽器裡（讀不到就用淺色）。
+(function () {
+  var KEY = 'taiyi-id-mask-theme', root = document.documentElement;
+  function saved() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function apply(t) {
+    if (t === 'dark') root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+    var b = document.getElementById('themeBtn');
+    if (b) b.textContent = t === 'dark' ? '☀ 淺色畫面' : '🌙 深色畫面';
+  }
+  apply(saved());  // 在畫面出現前套用，避免閃一下
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.getElementById('themeBtn');
+    apply(saved());
+    b.addEventListener('click', function () {
+      var t = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(KEY, t); } catch (e) { /* 記不住也照樣切換 */ }
+      apply(t);
+    });
+  });
+})();
+</script>
+</head>
+<body>
+<header>
+  <h1>個資馬賽克</h1>
+  <p>把文字裡的姓名、身分證號、電話、地址遮起來。全部在這台電腦處理，不會上網，資料不會傳出去。</p>
+  <button type="button" class="theme-btn" id="themeBtn" title="切換畫面顏色">🌙 深色畫面</button>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" id="tab-mask" aria-selected="true">① 遮蔽個資</button>
+  <button class="tab" role="tab" id="tab-restore" aria-selected="false">② 把代號換回真名</button>
+</div>
+
+<main>
+<section class="panel" id="panel-mask">
+  <div class="cols">
+    <div class="col">
+      <p class="step"><span class="num">1</span>放入要處理的資料</p>
+      <p class="hint">在框框裡按 <b>Ctrl+V</b> 貼上文字，或把 Word、Excel、文字檔<b>拖進框框</b>，或按「開啟檔案」。</p>
+      <div class="drop" id="drop">
+        <textarea id="input" placeholder="把要處理的文字貼在這裡（Ctrl+V）&#10;&#10;也可以把 Word（.docx）、Excel（.xlsx）、文字檔（.txt、.csv）拖進這個框框"></textarea>
+      </div>
+      <div class="tools">
+      <div class="row">
+        <button class="btn" id="open">開啟檔案…</button>
+        <button class="btn" id="sample">用範例試試看</button>
+        <button class="btn" id="clear">清除</button>
+        <input type="file" id="file" accept=".txt,.csv,.docx,.xlsx" hidden>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label for="names">這份資料裡有誰的名字？<small>（可不填）</small></label>
+          <input type="text" id="names" placeholder="例如：林美華、王大明" title="填了更準：後面只寫「美華」也會遮。多個名字用頓號、逗號或空白隔開。">
+        </div>
+        <div class="field">
+          <label for="others">其他一定要遮的字<small>（可不填）</small></label>
+          <input type="text" id="others" placeholder="例如：PT-12345、仁愛病房" title="例如病歷號、單位內部編號、特殊的地名。多個用頓號、逗號或空白隔開。">
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p class="step"><span class="num">2</span>看結果，確認後複製</p>
+      <div class="status idle" id="status">還沒有資料。</div>
+      <div class="result" id="result" aria-live="polite">
+        <div class="guide" id="guide">
+          <b>三個步驟就好：</b>
+          <ol>
+            <li>把文字貼到左邊的框框（或把檔案拖進去）。</li>
+            <li>這裡會<b>自動</b>出現遮好的結果，個資變成 <mark>[姓名1]</mark> 這種代號。</li>
+            <li>按下面的「<b>複製結果</b>」，貼到要用的地方。</li>
+          </ol>
+          第一次用？按左邊的「<b>用範例試試看</b>」。
+        </div>
+      </div>
+      <div class="tools">
+      <div class="chips" id="chips"></div>
+      <div class="row">
+        <button class="btn primary" id="copy" disabled>複製結果</button>
+        <button class="btn" id="save" disabled>存成檔案</button>
+      </div>
+      <p class="note">黃色＝已遮的個資，<b>點一下可取消遮蔽</b>，再點恢復。沒有稱謂、也沒填在左邊的名字可能抓不到，送出前請再看一眼。</p>
+      <p class="note">隔天以後才要把傳回來的代號換回真名？請先<button class="link" id="savemap" disabled>存對照表</button>（裡面有真實個資，只能留在自己電腦，不要寄出去）。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="panel-restore" hidden>
+  <div class="explain">
+    <p class="explain-title">這一頁做什麼？<span>把別人處理好、傳回來還帶著代號的文字，換回真正的姓名和電話。</span></p>
+    <svg viewBox="0 0 900 156" role="img" aria-label="流程圖：原始資料經「① 遮蔽個資」變成代號，交給別人處理後傳回來仍是代號，在這一頁換回真名">
+      <defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>
+      <g style="font-size:15px;fill:var(--ink)">
+        <rect x="10" y="24" width="170" height="100" rx="12" style="fill:var(--card);stroke:var(--line);stroke-width:2"/>
+        <text x="95" y="50" text-anchor="middle" style="font-weight:bold">📄 原始資料</text>
+        <text x="95" y="80" text-anchor="middle">請王大明回診</text>
+        <text x="95" y="106" text-anchor="middle">0912-345-678</text>
+        <text x="95" y="148" text-anchor="middle" style="font-size:14px;fill:var(--muted)">有真名，不能外流</text>
+
+        <line x1="184" y1="74" x2="244" y2="74" marker-end="url(#arw)" style="stroke:var(--muted);stroke-width:2.5"/>
+        <text x="214" y="63" text-anchor="middle" style="font-size:14px;fill:var(--muted)">① 遮蔽</text>
+
+        <rect x="250" y="24" width="170" height="100" rx="12" style="fill:var(--card);stroke:var(--line);stroke-width:2"/>
+        <text x="335" y="50" text-anchor="middle" style="font-weight:bold">🔒 遮好的資料</text>
+        <text x="335" y="80" text-anchor="middle">請<tspan style="fill:var(--brand);font-weight:bold">[姓名1]</tspan>回診</text>
+        <text x="335" y="106" text-anchor="middle" style="fill:var(--brand);font-weight:bold">[電話1]</text>
+        <text x="335" y="148" text-anchor="middle" style="font-size:14px;fill:var(--muted)">可以安心交給別人</text>
+
+        <line x1="424" y1="74" x2="484" y2="74" marker-end="url(#arw)" style="stroke:var(--muted);stroke-width:2.5"/>
+        <text x="454" y="63" text-anchor="middle" style="font-size:14px;fill:var(--muted)">交給別人</text>
+
+        <rect x="490" y="24" width="170" height="100" rx="12" style="fill:var(--card);stroke:var(--line);stroke-width:2"/>
+        <text x="575" y="50" text-anchor="middle" style="font-weight:bold">📨 傳回來的文字</text>
+        <text x="575" y="80" text-anchor="middle"><tspan style="fill:var(--brand);font-weight:bold">[姓名1]</tspan>已約好</text>
+        <text x="575" y="106" text-anchor="middle">下週三回診</text>
+        <text x="575" y="148" text-anchor="middle" style="font-size:14px;fill:var(--muted)">別人處理好，還是代號</text>
+
+        <line x1="664" y1="74" x2="724" y2="74" marker-end="url(#arw)" style="stroke:var(--brand);stroke-width:3"/>
+        <text x="694" y="63" text-anchor="middle" style="font-size:14px;fill:var(--brand);font-weight:bold">② 換回</text>
+
+        <rect x="730" y="24" width="160" height="100" rx="12" style="fill:var(--card);stroke:var(--brand);stroke-width:3"/>
+        <rect x="765" y="12" width="90" height="24" rx="12" style="fill:var(--brand)"/>
+        <text x="810" y="29" text-anchor="middle" style="font-size:13px;fill:var(--card);font-weight:bold">就是這一頁</text>
+        <text x="810" y="58" text-anchor="middle" style="font-weight:bold">✅ 換回真名</text>
+        <text x="810" y="84" text-anchor="middle"><tspan style="font-weight:bold">王大明</tspan>已約好</text>
+        <text x="810" y="108" text-anchor="middle">下週三回診</text>
+        <text x="810" y="148" text-anchor="middle" style="font-size:14px;fill:var(--brand);font-weight:bold">真名自動填回去</text>
+      </g>
+    </svg>
+  </div>
+  <div class="cols">
+    <div class="col">
+      <p class="step"><span class="num">1</span>放入傳回來、還有代號的文字</p>
+      <p class="hint">在框框裡按 <b>Ctrl+V</b> 貼上，或把 Word、Excel、文字檔<b>拖進框框</b>。裡面會有 [姓名1]、[電話1] 這種代號。</p>
+      <div class="drop" id="drop2">
+        <textarea id="reply" placeholder="把有 [姓名1]、[電話1] 代號的文字貼在這裡（Ctrl+V）&#10;&#10;也可以把傳回來的 Word、Excel、文字檔拖進這個框框"></textarea>
+      </div>
+      <div class="tools">
+      <div class="status idle" id="mapinfo"></div>
+      <div class="row">
+        <button class="btn" id="trymasked" hidden>用剛才遮好的結果試試看</button>
+        <button class="btn" id="openreply">開啟檔案…</button>
+        <button class="btn" id="openmap">開啟之前存的對照表…</button>
+        <input type="file" id="replyfile" accept=".txt,.csv,.docx,.xlsx" hidden>
+        <input type="file" id="mapfile" accept=".json" hidden>
+      </div>
+      </div>
+    </div>
+    <div class="col">
+      <p class="step"><span class="num">2</span>換回真名的結果</p>
+      <div class="status idle" id="rstatus">還沒有資料。</div>
+      <div class="result" id="restored" data-empty="放入左邊的文字後，換回真名的結果會出現在這裡。"></div>
+      <div class="tools">
+      <div class="row">
+        <button class="btn primary" id="copyrestored" disabled>複製結果</button>
+        <button class="btn" id="saverestored" disabled>存成檔案</button>
+      </div>
+      <p class="note">綠色＝換回來的真名；紅色虛線＝對照表裡找不到的代號，沒有換。</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>個資馬賽克 taiyi-id-mask /*__VERSION__*/ · 開源專案創建與維護：台醫資訊 · Apache-2.0 · 完全離線執行</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/*__PLACES__*/
+</script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  var engine = IdMaskEngine.create(PLACES);
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { source: null, findings: [], excluded: new Set(), masked: null, mapping: null, columns: [], learned: [] };
+
+  var SAMPLE = '個案姓名：林美華，身分證 T223456789，民國47年3月12日生。\n' +
+    '住屏東縣屏東市自由路272號3樓，手機 0912-345-678。\n' +
+    '美華自述最近胸悶，收縮壓 162 mmHg，空腹血糖 135 mg/dL。\n' +
+    '家屬王先生表示會陪同回診，聯絡電話 08-7370002 分機121。';
+  // 範例全部是虛構資料
+
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+  function words(s) { return s.split(/[、，,；;\s]+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+  // 表格（Excel、CSV、貼上的儲存格）：表頭是這些字的整欄都當已知值遮
+  var COLUMN_KINDS = [
+    [/姓名|名字|病人|個案|患者|家屬|聯絡人/, '姓名'],
+    [/身分證|身份證|統一證號|證號/, '身分證號'],
+    [/電話|手機|聯絡方式/, '電話'],
+    [/地址|住址|戶籍/, '地址'],
+    [/生日|出生/, '日期'],
+    [/病歷號|健保卡|卡號/, '標籤個資'],
+    [/信箱|e-?mail/i, '電子郵件']
+  ];
+  function columnValues(text) {
+    var lines = text.split('\n'), head = lines[0].split('\t'), out = {}, cols = [];
+    if (head.length < 2) return { known: out, cols: cols };
+    head.forEach(function (h, i) {
+      var hit = COLUMN_KINDS.find(function (ck) { return ck[0].test(h); });
+      if (!hit) return;
+      cols.push(h.trim());
+      lines.slice(1).forEach(function (l) {
+        var v = (l.split('\t')[i] || '').trim();
+        if (v) (out[hit[1]] = out[hit[1]] || []).push(v);
+      });
+    });
+    return { known: out, cols: cols };
+  }
+  function known(text) {
+    var k = {}, n = words($('names').value), o = words($('others').value);
+    var c = columnValues(text || '');
+    state.columns = c.cols;
+    Object.keys(c.known).forEach(function (kind) { k[kind] = c.known[kind]; });
+    if (n.length) k['姓名'] = (k['姓名'] || []).concat(n);
+    if (o.length) k['指定'] = o;
+    // 「姓名：陳志明」這類標籤後面的三字全名，也當已知值，後文只寫「志明」也會遮
+    state.learned = [];
+    engine.scan(text || '', k).forEach(function (f) {
+      if (f.kind === '姓名' && f.value.length === 3 && /[:：]\s*$/.test(text.slice(Math.max(0, f.start - 3), f.start)) &&
+          (k['姓名'] || []).indexOf(f.value) < 0) {
+        (k['姓名'] = k['姓名'] || []).push(f.value);
+        state.learned.push(f.value);
+      }
+    });
+    return k;
+  }
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function keyOf(f) { return f.kind + '\u0000' + f.value; }
+
+  function run() {
+    var text = $('input').value;
+    if (!text.trim()) {
+      state.masked = null; state.mapping = null;
+      $('result').innerHTML = ''; $('result').appendChild(guide);
+      $('status').className = 'status idle'; $('status').textContent = '還沒有資料。';
+      $('chips').innerHTML = '';
+      ['copy', 'save', 'savemap'].forEach(function (id) { $(id).disabled = true; });
+      $('save').textContent = '存成檔案';
+      return;
+    }
+    var k = known(text);
+    var all = engine.scan(text, k);
+    var used = all.filter(function (f) { return !state.excluded.has(keyOf(f)); });
+    var r = engine.maskFindings(text, used);
+    state.findings = all; state.masked = r.text; state.mapping = r.mapping;
+    restoreMap = null;  // 遮了新的資料，換回頁就改用這一份的代號，不再用之前開啟的對照表檔
+
+    // 結果：被遮的顯示代號；取消遮蔽的顯示原文（虛線）
+    var html = '', pos = 0;
+    all.forEach(function (f, i) {
+      html += esc(text.slice(pos, f.start));
+      var off = state.excluded.has(keyOf(f));
+      html += '<mark data-i="' + i + '" class="' + (off ? 'off' : '') + '" title="' +
+        (off ? '已取消遮蔽。點一下恢復遮蔽' : '原本是：' + esc(f.value) + '（點一下取消遮蔽）') + '">' +
+        esc(off ? f.value : f.token) + '</mark>';
+      pos = f.end;
+    });
+    html += esc(text.slice(pos));
+    $('result').innerHTML = html || '&nbsp;';
+
+    // 送出前檢查：遮好的文字再掃一次；使用者自己取消的不算
+    var resid = engine.residual(r.text, k).filter(function (f) { return !state.excluded.has(keyOf(f)); });
+    var count = {};
+    used.forEach(function (f) { count[f.kind] = (count[f.kind] || 0) + 1; });
+    $('chips').innerHTML = Object.keys(count).map(function (kind) {
+      return '<span class="chip">' + esc(kind) + ' ' + count[kind] + ' 處</span>';
+    }).join('') + (state.columns.length ? '<span class="chip">表格的「' + state.columns.map(esc).join('」「') + '」欄整欄都遮</span>' : '') +
+      (state.learned.length ? '<span class="chip">自動找到的名字：' + state.learned.map(esc).join('、') + '（只寫名字也會遮）</span>' : '');
+    var st = $('status');
+    if (resid.length) {
+      st.className = 'status warn';
+      st.textContent = '⚠ 遮完再檢查，還有 ' + resid.length + ' 處疑似個資：' +
+        resid.map(function (f) { return f.kind + '「' + f.value + '」'; }).join('、') + '。請在左邊「其他一定要遮的字」加上它。';
+    } else if (used.length) {
+      st.className = 'status ok';
+      st.textContent = '✓ 已遮蔽 ' + used.length + ' 處，再檢查一次沒有發現殘留。請再看一眼後按「複製結果」。';
+    } else {
+      st.className = 'status ok';
+      st.textContent = '沒有找到個資。如果裡面有人名，請填在左邊「這份資料裡有誰的名字」。';
+    }
+    ['copy', 'save'].forEach(function (id) { $(id).disabled = false; });
+    $('save').textContent = state.source && state.source.table ? '存成 Excel 可開的檔案' : '存成文字檔';
+    $('savemap').disabled = !Object.keys(r.mapping).length;
+    updateMapInfo();
+  }
+  var guide = $('guide');
+  var timer;
+  function later() { clearTimeout(timer); timer = setTimeout(run, 200); }
+
+  $('result').addEventListener('click', function (e) {
+    var m = e.target.closest('mark[data-i]');
+    if (!m) return;
+    var key = keyOf(state.findings[+m.getAttribute('data-i')]);
+    if (state.excluded.has(key)) state.excluded.delete(key); else state.excluded.add(key);
+    run();
+  });
+
+  ['input', 'names', 'others'].forEach(function (id) { $(id).addEventListener('input', later); });
+  $('sample').onclick = function () {
+    $('input').value = SAMPLE; $('names').value = '林美華'; $('others').value = '';
+    state.source = null; state.excluded.clear(); run(); toast('已放入範例（都是虛構資料）');
+  };
+  $('clear').onclick = function () {
+    $('input').value = ''; $('names').value = ''; $('others').value = '';
+    state.source = null; state.excluded.clear(); run(); $('input').focus();
+  };
+
+  // ---- 複製與存檔 ----
+  function copy(text) {
+    function fallback() {
+      var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(t);
+      toast(ok ? '已複製，可以到要用的地方按 Ctrl+V 貼上' : '複製失敗，請在結果框全選後按 Ctrl+C');
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { toast('已複製，可以到要用的地方按 Ctrl+V 貼上'); }, fallback);
+    } else fallback();
+  }
+  function stamp() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+  function download(name, content, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: type }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function tsvToCsv(text) {
+    return text.split('\n').map(function (line) {
+      return line.split('\t').map(function (c) { return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',');
+    }).join('\r\n');
+  }
+  $('copy').onclick = function () { copy(state.masked); };
+  $('save').onclick = function () {
+    var base = state.source ? state.source.name.replace(/\.[^.]+$/, '') : '資料';
+    if (state.source && state.source.table) {
+      download(base + '-已遮蔽.csv', '﻿' + tsvToCsv(state.masked), 'text/csv;charset=utf-8');
+      toast('已存成 CSV（Excel 可直接開），在「下載」資料夾');
+    } else {
+      download(base + '-已遮蔽.txt', '﻿' + state.masked.replace(/\r?\n/g, '\r\n'), 'text/plain;charset=utf-8');
+      toast('已存成文字檔，在「下載」資料夾');
+    }
+  };
+  $('savemap').onclick = function () {
+    var base = state.source ? state.source.name.replace(/\.[^.]+$/, '') + '-' : '';
+    download('對照表-' + base + stamp() + '.json', JSON.stringify({ '說明': '個資馬賽克對照表：含真實個資，只能留在本機，不要寄出。', mapping: state.mapping }, null, 2), 'application/json');
+    toast('對照表已存在「下載」資料夾。裡面有真實個資，不要寄出去');
+  };
+
+  // ---- 讀檔 ----
+  function readText(buf) {
+    var bytes = new Uint8Array(buf);
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^﻿/, ''); }
+    catch (e) { return new TextDecoder('big5').decode(bytes); } // 舊公文系統常見 Big5
+  }
+  async function zipEntries(buf) {
+    var dv = new DataView(buf), eocd = -1;
+    for (var i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('不是有效的 Office 檔');
+    var n = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), dec = new TextDecoder(), out = {};
+    for (var k = 0; k < n; k++) {
+      var method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true);
+      var nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+      var lho = dv.getUint32(p + 42, true), name = dec.decode(new Uint8Array(buf, p + 46, nl));
+      out[name] = { method: method, size: size, lho: lho };
+      p += 46 + nl + el + cl;
+    }
+    out.read = async function (name) {
+      var e = out[name]; if (!e) return null;
+      var start = e.lho + 30 + dv.getUint16(e.lho + 26, true) + dv.getUint16(e.lho + 28, true);
+      var data = new Uint8Array(buf, start, e.size);
+      if (e.method === 0) return dec.decode(data);
+      var stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return dec.decode(await new Response(stream).arrayBuffer());
+    };
+    return out;
+  }
+  function xml(s) { return new DOMParser().parseFromString(s, 'application/xml'); }
+  async function readDocx(buf) {
+    var z = await zipEntries(buf), doc = xml(await z.read('word/document.xml'));
+    var paras = Array.from(doc.getElementsByTagName('w:p'));
+    return paras.map(function (p) {
+      var s = '';
+      p.querySelectorAll('*').forEach(function (n) {
+        if (n.nodeName === 'w:t') s += n.textContent;
+        else if (n.nodeName === 'w:tab') s += '\t';
+        else if (n.nodeName === 'w:br' || n.nodeName === 'w:cr') s += '\n';
+      });
+      return s;
+    }).join('\n');
+  }
+  function colIndex(ref) {
+    var letters = (ref || '').replace(/[0-9]/g, ''), n = 0;
+    for (var i = 0; i < letters.length; i++) n = n * 26 + letters.charCodeAt(i) - 64;
+    return n - 1;
+  }
+  async function readXlsx(buf) {
+    var z = await zipEntries(buf), shared = [];
+    var ss = await z.read('xl/sharedStrings.xml');
+    if (ss) shared = Array.from(xml(ss).getElementsByTagName('si')).map(function (si) {
+      return Array.from(si.getElementsByTagName('t')).map(function (t) { return t.textContent; }).join('');
+    });
+    var sheets = Object.keys(z).filter(function (k) { return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); })
+      .sort(function (a, b) { return parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]); });
+    var lines = [];
+    for (var s = 0; s < sheets.length; s++) {
+      var doc = xml(await z.read(sheets[s]));
+      if (sheets.length > 1) { if (s) lines.push(''); lines.push('工作表' + (s + 1)); }
+      Array.from(doc.getElementsByTagName('row')).forEach(function (row) {
+        var cells = [];
+        Array.from(row.getElementsByTagName('c')).forEach(function (c) {
+          var t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0], val = '';
+          if (t === 's' && v) val = shared[parseInt(v.textContent)] || '';
+          else if (t === 'inlineStr') val = Array.from(c.getElementsByTagName('t')).map(function (x) { return x.textContent; }).join('');
+          else if (v) val = v.textContent;
+          var i = colIndex(c.getAttribute('r')); if (i < 0) i = cells.length;
+          cells[i] = val.replace(/[\t\r\n]+/g, ' ');
+        });
+        lines.push(Array.from(cells, function (x) { return x || ''; }).join('\t'));
+      });
+    }
+    return lines.join('\n');
+  }
+  // 讀 Word、Excel、文字檔，回傳 { text, name, table }；打不開就說明怎麼辦並回傳 null
+  async function readAny(file) {
+    var ext = (file.name.match(/\.([^.]+)$/) || [, ''])[1].toLowerCase();
+    try {
+      var buf = await file.arrayBuffer(), text;
+      if (ext === 'txt' || ext === 'csv') text = readText(buf);
+      else if (ext === 'docx') text = await readDocx(buf);
+      else if (ext === 'xlsx') text = await readXlsx(buf);
+      else {
+        toast('這種檔案打不開');
+        alert('這種檔案（.' + ext + '）打不開。\n\n請用 Word 或 Excel 打開它，按 Ctrl+A 全選、Ctrl+C 複製，\n再回到這裡的框框按 Ctrl+V 貼上。');
+        return null;
+      }
+      if (ext === 'csv') text = text.split(/\r?\n/).map(function (l) { return parseCsvLine(l).join('\t'); }).join('\n');
+      return { text: text.replace(/\r\n/g, '\n'), name: file.name, table: ext === 'csv' || ext === 'xlsx' };
+    } catch (e) {
+      alert('「' + file.name + '」讀取失敗。\n\n請用 Word 或 Excel 打開它，按 Ctrl+A 全選、Ctrl+C 複製，再貼到這裡。');
+      return null;
+    }
+  }
+  async function loadFile(file) {
+    var r = await readAny(file); if (!r) return;
+    $('input').value = r.text;
+    state.source = { name: r.name, table: r.table };
+    state.excluded.clear(); run();
+    toast('已讀入「' + r.name + '」');
+  }
+  function parseCsvLine(line) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur); return out;
+  }
+  $('open').onclick = function () { $('file').click(); };
+  $('file').onchange = function () { if (this.files[0]) loadFile(this.files[0]); this.value = ''; };
+  // 拖檔：框框亮起來；拖到框框外面也接住，免得瀏覽器直接把檔案打開
+  ['drop', 'drop2'].forEach(function (id) {
+    var d = $(id);
+    ['dragenter', 'dragover'].forEach(function (ev) { d.addEventListener(ev, function (e) { e.preventDefault(); d.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { d.addEventListener(ev, function () { d.classList.remove('over'); }); });
+  });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) {
+    e.preventDefault();
+    var f = e.dataTransfer.files[0]; if (!f) return;
+    if ($('panel-restore').hidden) loadFile(f);
+    else if (/\.json$/i.test(f.name)) loadMap(f);  // 換回頁：對照表或傳回來的檔案都可以拖進來
+    else loadReply(f);
+  });
+
+  // ---- 換回真名 ----
+  var restoreMap = null, restoreName = '', replySource = null, restoredText = '';
+  // 遮好的文字開頭，用來辨認是哪一份；不從代號中間切斷
+  function head(t) {
+    t = t.replace(/\s+/g, ' ').trim();
+    if (t.length <= 16) return t;
+    var h = t.slice(0, 16), open = h.lastIndexOf('[');
+    if (open > h.lastIndexOf(']')) h = h.slice(0, open);
+    return h.replace(/[\s，,、]+$/, '') + '…';
+  }
+  function setStatus(id, cls, text) { $(id).className = 'status ' + cls; $(id).textContent = text; $(id).hidden = false; }
+  function updateMapInfo() {
+    var n = state.mapping ? Object.keys(state.mapping).length : 0;
+    $('trymasked').hidden = !(state.masked && n);
+    if (restoreMap) setStatus('mapinfo', 'ok', '✓ 已準備好：使用對照表「' + restoreName + '」（' + Object.keys(restoreMap).length + ' 個代號）。');
+    else if (n) setStatus('mapinfo', 'ok', '✓ 已準備好：會用剛才在「① 遮蔽個資」處理的' +
+      (state.source ? '「' + state.source.name + '」' : '那份資料') + '（開頭是「' + head(state.masked) + '」）的 ' + n + ' 個代號換回真名。');
+    else setStatus('mapinfo', 'idle', 'ⓘ 還不知道代號原本是誰。請先到「① 遮蔽個資」處理資料；之前處理過的，請按「開啟之前存的對照表」，選當時存的「對照表-….json」（通常在「下載」資料夾）。');
+  }
+  function restore() {
+    var map = restoreMap || state.mapping, text = $('reply').value;
+    restoredText = '';
+    $('copyrestored').disabled = $('saverestored').disabled = true;
+    if (!text.trim()) { $('restored').textContent = ''; setStatus('rstatus', 'idle', '還沒有資料。'); return; }
+    if (!map) {
+      $('restored').textContent = '';
+      setStatus('rstatus', 'warn', '還不知道代號原本是誰，請先按左邊「開啟之前存的對照表」。');
+      return;
+    }
+    // 換好的真名標綠色；對照表裡找不到的代號標紅色虛線
+    var html = '', back = 0, miss = [];
+    engine.unmaskParts(text, map).forEach(function (part) {
+      if (!('token' in part)) { html += esc(part.text); return; }
+      if (part.value === null) {
+        if (miss.indexOf(part.token) < 0) miss.push(part.token);
+        html += '<mark class="miss" title="對照表裡沒有這個代號">' + esc(part.token) + '</mark>';
+      } else {
+        back++;
+        html += '<mark class="back" title="原本是 ' + esc(part.token) + '">' + esc(part.value) + '</mark>';
+      }
+    });
+    restoredText = engine.unmask(text, map);
+    $('restored').innerHTML = html;
+    $('copyrestored').disabled = $('saverestored').disabled = false;
+    $('saverestored').textContent = replySource && replySource.table ? '存成 Excel 可開的檔案' : '存成文字檔';
+    if (miss.length) setStatus('rstatus', 'warn', '⚠ 有 ' + miss.length + ' 個代號在對照表裡找不到：' + miss.slice(0, 5).join('、') +
+      (miss.length > 5 ? '…' : '') + '。可能是另一份資料的代號，請按左邊「開啟之前存的對照表」選那一份。');
+    else if (back) setStatus('rstatus', 'ok', '✓ 換回 ' + back + ' 個代號。請再看一眼後按「複製結果」。');
+    else setStatus('rstatus', 'idle', '這段文字裡沒有 [姓名1] 這種代號，不用換。');
+  }
+  $('reply').addEventListener('input', function () { replySource = null; restore(); });
+  $('trymasked').onclick = function () {
+    $('reply').value = state.masked; replySource = null; restore();
+    toast('已放入剛才遮好的結果，右邊就是換回真名的樣子');
+  };
+  async function loadReply(file) {
+    var r = await readAny(file); if (!r) return;
+    $('reply').value = r.text; replySource = { name: r.name, table: r.table };
+    restore(); toast('已讀入「' + r.name + '」');
+  }
+  $('openreply').onclick = function () { $('replyfile').click(); };
+  $('replyfile').onchange = function () { var f = this.files[0]; this.value = ''; if (f) loadReply(f); };
+  $('openmap').onclick = function () { $('mapfile').click(); };
+  async function loadMap(f) {
+    try {
+      var data = JSON.parse(readText(await f.arrayBuffer()));
+      var map = data.mapping || data;
+      if (!map || typeof map !== 'object' || !Object.keys(map).length) throw new Error('empty');
+      restoreMap = map; restoreName = f.name;
+      updateMapInfo(); restore(); toast('已讀入對照表「' + f.name + '」');
+    } catch (e) { alert('這個檔案不是個資馬賽克的對照表。對照表的檔名是「對照表-….json」，通常在「下載」資料夾。'); }
+  }
+  $('mapfile').onchange = function () { var f = this.files[0]; this.value = ''; if (f) loadMap(f); };
+  $('copyrestored').onclick = function () { copy(restoredText); };
+  $('saverestored').onclick = function () {
+    var base = replySource ? replySource.name.replace(/\.[^.]+$/, '') : '資料';
+    if (replySource && replySource.table) {
+      download(base + '-已換回.csv', '\ufeff' + tsvToCsv(restoredText), 'text/csv;charset=utf-8');
+      toast('已存成 CSV（Excel 可直接開），在「下載」資料夾。裡面有真實個資，請小心保管');
+    } else {
+      download(base + '-已換回.txt', '\ufeff' + restoredText.replace(/\r?\n/g, '\r\n'), 'text/plain;charset=utf-8');
+      toast('已存成文字檔，在「下載」資料夾。裡面有真實個資，請小心保管');
+    }
+  };
+
+  // ---- 分頁 ----
+  function show(which) {
+    var m = which === 'mask';
+    $('tab-mask').setAttribute('aria-selected', m); $('tab-restore').setAttribute('aria-selected', !m);
+    $('panel-mask').hidden = !m; $('panel-restore').hidden = m;
+    if (!m) { updateMapInfo(); restore(); $('reply').focus(); } else $('input').focus();
+  }
+  $('tab-mask').onclick = function () { show('mask'); };
+  $('tab-restore').onclick = function () { show('restore'); };
+  $('input').focus();
+})();
+</script>
+</body>
+</html>
